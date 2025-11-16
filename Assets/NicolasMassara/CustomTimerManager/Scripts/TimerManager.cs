@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using NicolasMassara.CustomTimerManager.Tools;
 using UnityEngine;
 
 namespace NicolasMassara.CustomTimerManager
@@ -153,7 +152,6 @@ namespace NicolasMassara.CustomTimerManager
                 {
                     _hasStarted = true;
                     _timerData?.TriggerOnStartAction();
-                    Debug.Log($"Timer Interval: {interval}");
                 }
                 
                 if (_elapsedSinceLastTick < interval) 
@@ -192,7 +190,92 @@ namespace NicolasMassara.CustomTimerManager
         private class TimerManagerData
         {
             public Timer Timer;
-            public TimerGeneratedId ExternalId;
+            public GeneratedId ExternalId;
+        }
+
+        #endregion
+        
+        #region ID Generator
+
+        public class GeneratedId
+        {
+            public ulong Id { get; private set; }
+            public bool IsActive => Id > 0;
+            private event Action<GeneratedId> _onRelease;
+
+            public GeneratedId(ulong id, Action<GeneratedId> onRelease)
+            {
+                Id = id;
+                _onRelease = onRelease;
+            }
+
+            public void Release()
+            {
+                _onRelease?.Invoke(this);
+            }
+
+            public void Reset()
+            {
+                Id = 0;
+            }
+        }
+
+        public class RandomIdGenerator
+        {
+            private const ulong NullId = 0; // Default ID used as a null
+        
+            private readonly HashSet<ulong> _inUseId = new HashSet<ulong>(); // In Used ID List 
+            private readonly System.Random _random = new System.Random();
+        
+            /// <summary>
+            /// Generates a random GeneratedId
+            /// That contains an ulong used as the ID
+            /// </summary>
+            /// <returns></returns>
+            public GeneratedId Generate()
+            {
+                ulong value;
+                int attempts = 0;
+
+                do
+                {
+                    value = NextUlong();
+                    attempts++;
+
+                    if (attempts > 100)
+                    {
+                        break;
+                    }
+
+                } while (_inUseId.Contains(value));
+
+                _inUseId.Add(value);
+            
+                var generatedId = new GeneratedId(value,Release);
+            
+                return generatedId;
+            }
+        
+            private void Release(GeneratedId idData)
+            {
+                _inUseId.Remove(idData.Id);
+                idData.Reset();
+            }
+        
+            private ulong NextUlong()
+            {
+                ulong value;
+
+                do
+                {
+                    byte[] bytes = new byte[8];
+                    _random.NextBytes(bytes);
+                    value = BitConverter.ToUInt64(bytes, 0);
+
+                } while (value == NullId);
+
+                return value;
+            }
         }
 
         #endregion
@@ -312,6 +395,7 @@ namespace NicolasMassara.CustomTimerManager
                 {
                     _running.Remove(data);
                     _timerDic.Remove(data.ExternalId.Id);
+                    _timerFactory.ReturnTimer(data.Timer);
                     data.ExternalId.Reset();
                 }
 
@@ -326,8 +410,8 @@ namespace NicolasMassara.CustomTimerManager
         //====================================================
         #region Public
 
-        public static TimerGeneratedId Add(TimerData timerData) => Instance.AddInternal(timerData);
-        public static bool Remove(TimerGeneratedId generatedId) => Instance.RemoveInternal(generatedId);
+        public static GeneratedId Add(TimerData timerData) => Instance.AddInternal(timerData);
+        public static bool Remove(GeneratedId generatedId) => Instance.RemoveInternal(generatedId);
         public static void Clear() => Instance.ClearInternal();
 
         #endregion
@@ -337,7 +421,7 @@ namespace NicolasMassara.CustomTimerManager
         //====================================================
         #region Internal
 
-        private TimerGeneratedId AddInternal(TimerData timerData)
+        private GeneratedId AddInternal(TimerData timerData)
         {
             var generatedId = _idStorage.Generate();
             var timer = _timerFactory.GetTimer();
@@ -352,7 +436,7 @@ namespace NicolasMassara.CustomTimerManager
             return generatedId;
         }
 
-        private bool RemoveInternal(TimerGeneratedId generatedId)
+        private bool RemoveInternal(GeneratedId generatedId)
         {
             if(generatedId == null) return false;
             
