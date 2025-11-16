@@ -13,7 +13,7 @@ namespace NicolasMassara.TimedActionManager.Test
         [SerializeField] private float actionExecuteTime = 1.5f;
         [SerializeField] private PriorityTick priority;
         
-        private ActionManager.GeneratedId _generatedId = new ActionManager.GeneratedId();
+        private TimedActionManager.GeneratedId _generatedId = new TimedActionManager.GeneratedId();
         private bool _hasStarted;
         
         private void Start()
@@ -44,7 +44,7 @@ namespace NicolasMassara.TimedActionManager.Test
                 };
             }
             
-            _generatedId = ActionManager.Add(actionData, priority);
+            _generatedId = TimedActionManager.Add(actionData, priority);
         }
 
         public void RemoveQueue()
@@ -53,7 +53,7 @@ namespace NicolasMassara.TimedActionManager.Test
             
             if (_generatedId.IsActive)
             {
-                ActionManager.Remove(_generatedId);
+                TimedActionManager.Remove(_generatedId);
             }
             else
             {

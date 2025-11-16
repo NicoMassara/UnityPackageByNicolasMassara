@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace NicolasMassara.TimedActionManager
 {
-    public class ActionQueue
+    public class TimedActionQueue
     {
         
         #region Tools
@@ -86,13 +86,13 @@ namespace NicolasMassara.TimedActionManager
         public bool IsEmpty => _actionQueue.Count == 0 && !_isRunning; 
         
 
-        public ActionQueue()
+        public TimedActionQueue()
         {
             _executeTimer.OnStart += Timer_OnStartHandler;
             _executeTimer.OnEnd += Timer_OnEndHandler;
         }
 
-        public ActionQueue AddAction(ActionData[] actionQueue)
+        public TimedActionQueue AddAction(ActionData[] actionQueue)
         {
             foreach (var action in actionQueue)
             {
@@ -104,20 +104,20 @@ namespace NicolasMassara.TimedActionManager
             return this;
         }
         
-        public ActionQueue AddAction(ActionData action)
+        public TimedActionQueue AddAction(ActionData action)
         {
             _actionQueue.Enqueue(action);
             return this;
         }
 
-        public ActionQueue SetPriority(PriorityTick priority)
+        public TimedActionQueue SetPriority(PriorityTick priority)
         {
             _priority = priority;
             return this;
         }
 
 
-        public ActionQueue SetTargetFrameRate(int targetFrameRate)
+        public TimedActionQueue SetTargetFrameRate(int targetFrameRate)
         {
             _targetFrameRate = targetFrameRate;
             return this;

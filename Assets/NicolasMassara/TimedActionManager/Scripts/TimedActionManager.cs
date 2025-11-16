@@ -36,23 +36,23 @@ namespace NicolasMassara.TimedActionManager
 
     #endregion
     
-    public class ActionManager : MonoBehaviour
+    public class TimedActionManager : MonoBehaviour
     {
         //====================================================
         //                       SINGLETON
         //====================================================
         
-        public static ActionManager Instance =>  _instance != null ? _instance : (_instance = CreateInstance());
-        private static ActionManager _instance;
+        public static TimedActionManager Instance =>  _instance != null ? _instance : (_instance = CreateInstance());
+        private static TimedActionManager _instance;
         
-        private static ActionManager CreateInstance()
+        private static TimedActionManager CreateInstance()
         {
-            var gameObject = new GameObject(nameof(ActionManager))
+            var gameObject = new GameObject(nameof(TimedActionManager))
             {
                 hideFlags = HideFlags.DontSave,
             };
             DontDestroyOnLoad(gameObject);
-            return gameObject.AddComponent<ActionManager>();
+            return gameObject.AddComponent<TimedActionManager>();
         }
         
         #region ID Generator
@@ -148,25 +148,25 @@ namespace NicolasMassara.TimedActionManager
 
         public class ActionFactory
         {
-            private readonly List<ActionQueue> _availableQueue = new List<ActionQueue>();
+            private readonly List<TimedActionQueue> _availableQueue = new List<TimedActionQueue>();
             private int AvailableCount => _availableQueue.Count;
 
             public ActionFactory(int initializeCount = 10)
             {
                 for (int i = 0; i < initializeCount; i++)
-                    _availableQueue.Add(new ActionQueue());
+                    _availableQueue.Add(new TimedActionQueue());
             }
 
-            public ActionQueue GetActionQueue()
+            public TimedActionQueue GetActionQueue()
             {
-                if (AvailableCount == 0) return new ActionQueue();
+                if (AvailableCount == 0) return new TimedActionQueue();
 
                 var timer = _availableQueue[0];
                 _availableQueue.RemoveAt(0);
                 return timer;
             }
 
-            public void ReturnActionQueue(ActionQueue actionQueue)
+            public void ReturnActionQueue(TimedActionQueue actionQueue)
             {
                 actionQueue.Reset();
                 _availableQueue.Add(actionQueue);
@@ -187,7 +187,7 @@ namespace NicolasMassara.TimedActionManager
         
         private class ActionQueueData
         {
-            public ActionQueue ActionQueue;
+            public TimedActionQueue ActionQueue;
             public GeneratedId ExternalId;
         }
 
