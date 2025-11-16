@@ -240,7 +240,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2cdc6a73fd76423fba135c918c46256c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actions: []
+  actionCount: 100
+  actionExecuteTime: 0.1
   priority: 0
 --- !u!4 &2117238347
 Transform:
