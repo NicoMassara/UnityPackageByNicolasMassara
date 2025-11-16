@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using NicolasMassara.CustomTimerManager.Tools;
 using UnityEditor;
 
 namespace NicolasMassara.CustomTimerManager.Tests
@@ -14,7 +13,7 @@ namespace NicolasMassara.CustomTimerManager.Tests
         [Range(24, 165)] 
         [SerializeField]
         private int targetFrameRate = 60;
-        private TimerGeneratedId _timerId;
+        private TimerManager.GeneratedId _id;
         private bool _canExecute;
 
         private void Awake()
@@ -29,14 +28,14 @@ namespace NicolasMassara.CustomTimerManager.Tests
             
             var timerData = new TimerData(testMessage.TargetTime, testMessage.Frequency,
                 testMessage.StartAction, testMessage.EndAction);
-            _timerId = TimerManager.Add(timerData);
+            _id = TimerManager.Add(timerData);
         }
 
         public void RemoveTimer()
         {
             if (_canExecute == false) return;
             
-            TimerManager.Remove(_timerId);
+            TimerManager.Remove(_id);
         }
     }
 
