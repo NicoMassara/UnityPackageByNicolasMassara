@@ -128,18 +128,21 @@ namespace NicolasMassara.TimedActionManager
             if (_isRunning)
             {
                 _elapsedSinceLastTick += deltaTime;
+                
                 float interval = TimerTools.GetPriorityTick(_priority, frameTime, _targetFrameRate);
+
+                while (_elapsedSinceLastTick >= interval)
+                {
+                    _executeTimer.Run(interval);
+                    _elapsedSinceLastTick -= interval;
+                }
                 
-                if (_elapsedSinceLastTick < interval) 
-                    return;
-                
-                _executeTimer.Run(_elapsedSinceLastTick);
-                _elapsedSinceLastTick = 0f;
             }
             else if (_actionQueue.Count > 0)
             {
                 _currentAction = _actionQueue.Dequeue();
                 _executeTimer.Set(_currentAction.TimeToExecute);
+                _elapsedSinceLastTick = 0;
                 _isRunning = true;
             }
         }

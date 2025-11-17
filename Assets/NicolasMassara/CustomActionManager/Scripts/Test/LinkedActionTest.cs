@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using NicolasMassara.TimedActionManager;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,7 +9,8 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
 #if UNITY_EDITOR
     public class LinkedActionTest : MonoBehaviour
     {
-        private ActionQueue _queue;
+        private LinkedActionManager.GeneratedId _generatedId;
+        private InterruptibleSequence _sequence;
         private bool _hasStarted;
 
         private bool _canContinue;
@@ -16,59 +18,73 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
         private void Start()
         {
             _hasStarted = true;
-            _queue = new ActionQueue();
-        }
-        
-        private void Update()
-        {
-            _queue.Execute(Time.deltaTime);
-        }
-
-        public void RunQueue()
-        {
-            if(_hasStarted == false) return;
-            
-            var temp = new IQueueAction[]
-            {
-                new WaitForKeyAction(KeyCode.W),
-                new WaitForSecondsAction(3f),
-                new AsyncQueueAction(ExternalActionAsync),
-                new WaitForFramesAction(30),
-                new WaitForConditionAction(() => _canContinue),
-                new ActionSequence( new IQueueAction[]
-                {
-                        
-                    new WaitForKeyAction(KeyCode.W),
-                    new WaitForKeyAction(KeyCode.A),
-                    new WaitForKeyAction(KeyCode.S),
-                    new WaitForKeyAction(KeyCode.D),
-                    new ActionWithResult<int>(
-                        actionFunc: () => UnityEngine.Random.Range(0, 100),
-                        resultCallback: result => Debug.Log("Random Number: " + result))
-                }),
-                new ActionParallel(new IQueueAction[]
-                {
-                    new WaitForKeyAction(KeyCode.Q),
-                    new WaitForKeyAction(KeyCode.W)
-                }),
-                new LogDebugAction("Queue Finished")
-                
-            };
-            
-            _queue.AddAction(temp);
         }
         
         async Task ExternalActionAsync()
         {
             await Task.Delay(5000);
-            Console.WriteLine("Evento externo completado!");
+            Debug.Log("External Event Finished!");
+        }
+
+        public void RunQueue()
+        {
+            if(_hasStarted == false) return;
+
+            var builder = ActionBuilder.Start()
+                .Do(new LogDebugAction("Be Fast!"))
+                .Then(new WaitSecondsAction(0.5f))
+                .Then(new LogDebugAction("Prepare for Key"))
+                .Then(new WaitForKeyAction(KeyCode.W))
+                .Then(new LogDebugAction("Success!"))
+                .Then(new WaitSecondsAction(0.5f))
+                .Then(new LogDebugAction("Prepare for Key"))
+                .Then(new WaitForKeyAction(KeyCode.W))
+                .Then(new LogDebugAction("Success!"))
+                .Then(new WaitSecondsAction(0.25f))
+                .Then(new LogDebugAction("Allow to Continue"))
+                .Then(new ConditionalAction(() => _canContinue))
+                .Then(new LogDebugAction("Finished"))
+                .WrapAll(a => new TimeoutAction(a, 10,
+                    status =>
+                    {
+                        Debug.Log("Action Timed Out, Removed!");
+                        Remove();
+                    }));
+            
+            var action = builder.Build();
+
+            _sequence = new InterruptibleSequence(action, () =>
+            {
+                Debug.Log("Action Interrupted, Removed!");
+            });
+            
+            _generatedId = LinkedActionManager.Add(action, PriorityTick.High);
+        }
+
+        public void Remove()
+        {
+            if(_hasStarted == false) return;
+            
+            LinkedActionManager.Remove(_generatedId);
         }
 
         public void AddInterrupter()
         {
             if(_hasStarted == false) return;
 
-            _queue.AddUrgentAndInterrupt(new WaitForKeyAction(KeyCode.Return));
+            LinkedActionManager.AddUrgentAndInterrupt(_generatedId, new LogDebugAction("Interrupted By This Message"));
+        }
+        
+        public void AddUrgentNext()
+        {
+            if(_hasStarted == false) return;
+
+            LinkedActionManager.AddUrgentNext(_generatedId, new []
+            {
+                new LogDebugAction("This is an Urgent Message 1"),
+                new LogDebugAction("This is an Urgent Message 2"),
+                new LogDebugAction("This is an Urgent Message 3"),
+            });
         }
 
         public void AllowContinue()
@@ -77,19 +93,30 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
             
             _canContinue = true;
         }
+
+        public void InterruptSequence()
+        {
+            _sequence.OnInterrupt();
+        }
     }
     
     public class WaitForKeyAction : IQueueAction
     {
         readonly KeyCode _key;
 
+        public ActionStatus CurrentStatus { get; private set; }
         public WaitForKeyAction(KeyCode key) => _key = key;
 
         public void OnStart() => Debug.Log("Waiting For: " + _key);
 
         public ActionStatus OnUpdate(float deltaTime) => Input.GetKey(_key) ? ActionStatus.Success : ActionStatus.Running;
 
-        public void OnInterrupt() => Debug.Log("Interrupted " + _key);
+        public void OnInterrupt()
+        {
+            if (CurrentStatus == ActionStatus.Idle) return;
+            
+            Debug.Log("Interrupted " + _key);
+        }
     }
 
 #endif
@@ -113,16 +140,34 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
                 script.RunQueue();
             }
             
+            if (GUILayout.Button("Clear Queue"))
+            {
+                // Llama al método normalmente
+                script.Remove();
+            }
+            
             if (GUILayout.Button("Add Interrupter"))
             {
                 // Llama al método normalmente
                 script.AddInterrupter();
             }
             
+            if (GUILayout.Button("Add Urgent Next"))
+            {
+                // Llama al método normalmente
+                script.AddUrgentNext();
+            }
+            
             if (GUILayout.Button("Allow Continue"))
             {
                 // Llama al método normalmente
                 script.AllowContinue();
+            }
+            
+            if (GUILayout.Button("Interrupt Sequence"))
+            {
+                // Llama al método normalmente
+                script.InterruptSequence();
             }
         }
     }
