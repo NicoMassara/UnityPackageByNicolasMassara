@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace NicolasMassara.LinkedActionManager
+namespace NicolasMassara.CustomActionManager
 {
     public class LinkedActionManager : MonoBehaviour
     {
