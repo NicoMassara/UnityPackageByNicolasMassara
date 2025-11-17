@@ -28,75 +28,30 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
         {
             if(_hasStarted == false) return;
             
-            var temp = new QueueActionData[]
+            var temp = new IQueueAction[]
             {
-                new()
+                new WaitForKeyAction(KeyCode.W),
+                new WaitForSecondsAction(3f),
+                new AsyncQueueAction(ExternalActionAsync),
+                new WaitForFramesAction(30),
+                new WaitForConditionAction(() => _canContinue),
+                new ActionSequence( new IQueueAction[]
                 {
-                    Action = new WaitForKeyAction(KeyCode.W)
-                },
-                new()
+                        
+                    new WaitForKeyAction(KeyCode.W),
+                    new WaitForKeyAction(KeyCode.A),
+                    new WaitForKeyAction(KeyCode.S),
+                    new WaitForKeyAction(KeyCode.D),
+                    new ActionWithResult<int>(
+                        actionFunc: () => UnityEngine.Random.Range(0, 100),
+                        resultCallback: result => Debug.Log("Random Number: " + result))
+                }),
+                new ActionParallel(new IQueueAction[]
                 {
-                    Action = new WaitForSecondsAction(3f),
-                    StartCallback = ()=> Debug.Log("Waiting for seconds")
-                },
-                new()
-                {
-                    Action = new AsyncQueueAction(ExternalActionAsync),
-                    StartCallback = ()=> Debug.Log("Waiting for Async")
-                },
-                new()
-                {
-                    Action = new WaitForFramesAction(30),
-                    StartCallback = ()=> Debug.Log("Waiting for frames")
-                },
-                new()
-                {
-                    Action = new WaitForConditionAction(() => _canContinue),
-                    StartCallback = ()=> Debug.Log("Waiting for bool")
-                },
-                new()
-                {
-                    Action = new ActionSequence( new QueueActionData[]
-                    {
-                        new() { Action = new WaitForKeyAction(KeyCode.W) },
-                        new() { Action = new WaitForKeyAction(KeyCode.A) },
-                        new() { Action = new WaitForKeyAction(KeyCode.S) },
-                        new() { Action = new WaitForKeyAction(KeyCode.D) },
-                        new()
-                        {
-                            Action = new ActionWithResult<int>(
-                                actionFunc: () => UnityEngine.Random.Range(0, 100),
-                                resultCallback: result => Debug.Log("Random Number: " + result)),
-                            StartCallback = () =>
-                            {
-                                Debug.Log("Action With Result Started");
-                            },
-                            EndCallback = () =>
-                            {
-                                Debug.Log("Action With Result Finished");
-                            }
-                    
-                        }
-                    }),
-                    StartCallback = () =>
-                    {
-                        Debug.Log("Sequence Started");
-                    },
-                    EndCallback = () =>
-                    {
-                        Debug.Log("Sequence Finished");
-                    }
-                },
-                new ()
-                {
-                    Action = new ActionParallel(new QueueActionData[]
-                    {
-                        new() { Action = new WaitForKeyAction(KeyCode.Q), EndCallback = ()=> Debug.Log("Key Pressed")},
-                        new() { Action = new WaitForKeyAction(KeyCode.W), EndCallback = ()=> Debug.Log("Key Pressed")},
-                    }),
-                    StartCallback = () => Debug.Log("Parallel Started"),
-                    EndCallback = () => Debug.Log("Parallel Finished")
-                }
+                    new WaitForKeyAction(KeyCode.Q),
+                    new WaitForKeyAction(KeyCode.W)
+                }),
+                new LogDebugAction("Queue Finished")
                 
             };
             
@@ -112,12 +67,8 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
         public void AddInterrupter()
         {
             if(_hasStarted == false) return;
-            
-            _queue.AddUrgentAndInterrupt(new QueueActionData
-            {
-                Action = new WaitForKeyAction(KeyCode.Return),
-                EndCallback = () => { Debug.Log("Nigga");}
-            });
+
+            _queue.AddUrgentAndInterrupt(new WaitForKeyAction(KeyCode.Return));
         }
 
         public void AllowContinue()

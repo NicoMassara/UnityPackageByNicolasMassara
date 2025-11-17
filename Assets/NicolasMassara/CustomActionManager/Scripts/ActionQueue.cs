@@ -14,14 +14,6 @@ namespace NicolasMassara.CustomActionManager
         public ActionStatus OnUpdate(float deltaTime);
         public void OnInterrupt();   
     }
-
-    public class QueueActionData
-    {
-        public IQueueAction Action;
-        public Action StartCallback;
-        public Action EndCallback;
-        public bool HasCallback => EndCallback != null || StartCallback != null;
-    }
     
     public enum ActionStatus
     {
@@ -32,40 +24,18 @@ namespace NicolasMassara.CustomActionManager
     
     public sealed class ActionQueueTools
     {
-        public static IQueueAction FilterCallback(QueueActionData data)
+        public static Queue<IQueueAction> CreateQueue(IEnumerable<IQueueAction> data)
         {
-            return data.HasCallback ? 
-                new ActionWithCallBack(data.Action, data.StartCallback, data.EndCallback)
-                : data.Action;
-        }
-
-        public static Queue<IQueueAction> CreateQueue(IEnumerable<QueueActionData> data)
-        {
-            var tempQueue = new Queue<IQueueAction>();
-            
-            foreach (QueueActionData item in data)
-            {
-                tempQueue.Enqueue(FilterCallback(item));
-            }
-            
-            return tempQueue;
+            return new Queue<IQueueAction>(data);
         }
         
-        public static List<IQueueAction> CreateList(IEnumerable<QueueActionData> data)
+        public static List<IQueueAction> CreateList(IEnumerable<IQueueAction> data)
         {
-            var temp = new List<IQueueAction>();
-            
-            foreach (QueueActionData item in data)
-            {
-                temp.Add(FilterCallback(item));
-            }
-            
-            return temp;
+            return new List<IQueueAction>(data);
         }
     }
 
     #region Wrappers
-    
     public class ActionWithCallBack : IQueueAction
     {
         private readonly IQueueAction _inner;
@@ -147,7 +117,6 @@ namespace NicolasMassara.CustomActionManager
             _timeElapsed = _timeToWait;
         }
     }
-    
     public class WaitForExternalAction : IQueueAction
     {
         private bool _triggered = false;
@@ -175,7 +144,6 @@ namespace NicolasMassara.CustomActionManager
             _triggered = false;
         }
     }
-    
     public class TimeoutAction : IQueueAction
     {
         private readonly IQueueAction _inner;
@@ -208,7 +176,6 @@ namespace NicolasMassara.CustomActionManager
             _inner.OnInterrupt();
         }
     }
-    
     public class RetryAction : IQueueAction
     {
         private readonly IQueueAction _inner;
@@ -237,6 +204,75 @@ namespace NicolasMassara.CustomActionManager
                 return ActionStatus.Running;
             }
 
+            return status;
+        }
+
+        public void OnInterrupt()
+        {
+            _inner.OnInterrupt();
+        }
+    }
+    public class PriorityAction : IQueueAction
+    {
+        private readonly IQueueAction _inner;
+        private readonly Func<bool> _shouldInterruptOthers;
+
+        public PriorityAction(IQueueAction inner, Func<bool> shouldInterruptOthers)
+        {
+            _inner = inner;
+            _shouldInterruptOthers = shouldInterruptOthers;
+        }
+
+        public void OnStart()
+        {
+            _inner.OnStart();
+        }
+
+        public ActionStatus OnUpdate(float deltaTime)
+        {
+            if (_shouldInterruptOthers())
+            {
+                _inner.OnInterrupt();
+                return ActionStatus.Failure;
+            }
+            return _inner.OnUpdate(deltaTime);
+        }
+
+        public void OnInterrupt()
+        {
+            _inner.OnInterrupt();
+        }
+    }
+    public class RepeatAction : IQueueAction
+    {
+        private readonly IQueueAction _inner;
+        private readonly int _repeatCount;
+        private int _currentCount;
+
+        public RepeatAction(IQueueAction inner, int repeatCount)
+        {
+            _inner = inner;
+            _repeatCount = repeatCount;
+        }
+
+        public void OnStart()
+        {
+            _currentCount = 0;
+            _inner.OnStart();
+        }
+
+        public ActionStatus OnUpdate(float deltaTime)
+        {
+            var status = _inner.OnUpdate(deltaTime);
+            if (status == ActionStatus.Success)
+            {
+                _currentCount++;
+                if (_currentCount >= _repeatCount)
+                    return ActionStatus.Success;
+
+                _inner.OnStart(); // reinicia
+                return ActionStatus.Running;
+            }
             return status;
         }
 
@@ -307,7 +343,7 @@ namespace NicolasMassara.CustomActionManager
         private readonly Queue<IQueueAction> _actions;
         private IQueueAction _current = null;
 
-        public ActionSequence(IEnumerable<QueueActionData> actions)
+        public ActionSequence(IEnumerable<IQueueAction> actions)
         {
             _actions = ActionQueueTools.CreateQueue(actions);
         }
@@ -349,7 +385,7 @@ namespace NicolasMassara.CustomActionManager
         private readonly List<IQueueAction> _actions;
         private readonly List<IQueueAction> _finished = new List<IQueueAction>();
 
-        public ActionParallel(IEnumerable<QueueActionData> actions)
+        public ActionParallel(IEnumerable<IQueueAction> actions)
         {
             _actions = ActionQueueTools.CreateList(actions);
         }
@@ -436,7 +472,65 @@ namespace NicolasMassara.CustomActionManager
             _tcs.TrySetCanceled();
         }
     }
-    
+    public class DebugAction : IQueueAction
+    {
+        private readonly IQueueAction _inner;
+        private readonly string _name;
+
+        public DebugAction(IQueueAction inner, string name)
+        {
+            _inner = inner;
+            _name = name;
+        }
+
+        public void OnStart()
+        {
+            Console.WriteLine($"{_name} started");
+            _inner.OnStart();
+        }
+
+        public ActionStatus OnUpdate(float deltaTime)
+        {
+            var status = _inner.OnUpdate(deltaTime);
+            if (status == ActionStatus.Success)
+                Console.WriteLine($"{_name} success");
+            else if (status == ActionStatus.Failure)
+                Console.WriteLine($"{_name} failed");
+            return status;
+        }
+
+        public void OnInterrupt()
+        {
+            Console.WriteLine($"{_name} interrupted");
+            _inner.OnInterrupt();
+        }
+    }
+
+    public class LogDebugAction : IQueueAction
+    {
+        private readonly string _message;
+
+        public LogDebugAction(string message)
+        {
+            _message = message;
+        }
+
+        public void OnStart()
+        {
+            Debug.Log(_message);
+        }
+
+        public ActionStatus OnUpdate(float deltaTime)
+        {
+            return ActionStatus.Success;
+        }
+
+        public void OnInterrupt()
+        {
+            Debug.Log($"Message interrupted");
+        }
+    }
+
     #endregion
 
     #endregion
@@ -455,12 +549,12 @@ namespace NicolasMassara.CustomActionManager
         {
         }
 
-        public ActionQueue(QueueActionData queueAction)
+        public ActionQueue(IQueueAction queueAction)
         {
             AddAction(queueAction);
         }
         
-        public ActionQueue(IEnumerable<QueueActionData> actions)
+        public ActionQueue(IEnumerable<IQueueAction> actions)
         {
             AddAction(actions);
         }
@@ -469,14 +563,14 @@ namespace NicolasMassara.CustomActionManager
 
         #region Add
 
-        public void AddAction(QueueActionData data)
+        public void AddAction(IQueueAction data)
         {
             _actions ??= new Queue<IQueueAction>();
             
-            _actions.Enqueue(ActionQueueTools.FilterCallback(data));
+            _actions.Enqueue(data);
         }
 
-        public void AddAction(IEnumerable<QueueActionData> actions)
+        public void AddAction(IEnumerable<IQueueAction> actions)
         {
             _actions = ActionQueueTools.CreateQueue(actions);
         }
@@ -501,7 +595,7 @@ namespace NicolasMassara.CustomActionManager
         }
 
 
-        public void AddUrgentAndInterrupt(QueueActionData queueActionData)
+        public void AddUrgentAndInterrupt(IQueueAction action)
         {
             if (IsRunning == false)
             {
@@ -510,8 +604,8 @@ namespace NicolasMassara.CustomActionManager
             }
 
             _current?.OnInterrupt();
-            
-            _current = ActionQueueTools.FilterCallback(queueActionData);
+
+            _current = action;
 
             _current.OnStart();
         }
@@ -520,7 +614,7 @@ namespace NicolasMassara.CustomActionManager
 
         #region Urgent
 
-        public void AddUrgentNext(IEnumerable<QueueActionData> queueActionData)
+        public void AddUrgentNext(IEnumerable<IQueueAction> actions)
         {
             if (IsRunning == false)
             {
@@ -528,10 +622,10 @@ namespace NicolasMassara.CustomActionManager
                 return;
             }
             
-            _urgentActions = ActionQueueTools.CreateQueue(queueActionData);
+            _urgentActions = ActionQueueTools.CreateQueue(actions);
         }
 
-        public void AddUrgentNext(QueueActionData queueActionData)
+        public void AddUrgentNext(IQueueAction action)
         {
             if (IsRunning == false)
             {
@@ -539,7 +633,7 @@ namespace NicolasMassara.CustomActionManager
                 return;
             }
             
-            _urgentActions.Enqueue(ActionQueueTools.FilterCallback(queueActionData));
+            _urgentActions.Enqueue(action);
         }
 
         #endregion
