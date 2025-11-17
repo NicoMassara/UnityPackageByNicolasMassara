@@ -222,8 +222,8 @@ namespace NicolasMassara.CustomActionManager
 
         public void OnInterrupt()
         {
-            _inner.OnInterrupt();   // Interrumpe todo
-            _onInterrupt?.Invoke(); // Callback si hace falta
+            _inner.OnInterrupt();  
+            _onInterrupt?.Invoke();
         }
     }
     
