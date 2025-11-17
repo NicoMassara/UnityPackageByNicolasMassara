@@ -117,28 +117,140 @@ namespace NicolasMassara.CustomActionManager
 
         public class ActionFactory
         {
-            private readonly List<ActionQueue> _availableQueue = new List<ActionQueue>();
+            private readonly List<ActionQueueRunner> _availableQueue = new List<ActionQueueRunner>();
             private int AvailableCount => _availableQueue.Count;
 
             public ActionFactory(int initializeCount = 10)
             {
                 for (int i = 0; i < initializeCount; i++)
-                    _availableQueue.Add(new ActionQueue());
+                    _availableQueue.Add(new ActionQueueRunner());
             }
 
-            public ActionQueue GetActionQueue()
+            public ActionQueueRunner GetActionQueue()
             {
-                if (AvailableCount == 0) return new ActionQueue();
+                if (AvailableCount == 0) return new ActionQueueRunner();
 
                 var timer = _availableQueue[0];
                 _availableQueue.RemoveAt(0);
                 return timer;
             }
 
-            public void ReturnActionQueue(ActionQueue actionQueue)
+            public void ReturnActionQueue(ActionQueueRunner actionQueue)
             {
-                actionQueue.Clear();
+                actionQueue.ResetValues();
                 _availableQueue.Add(actionQueue);
+            }
+        }
+
+        #endregion
+
+        #region QueueRunner
+
+        public class ActionQueueRunner
+        {
+            private class TimerTools
+            {
+                public static float GetPriorityTick(PriorityTick group, float frameTime, float targetFrameRate)
+                {
+                    float targetFPS = targetFrameRate > 0 ? targetFrameRate : (1f / frameTime);
+                    float baseFrameTime = 1f / targetFPS;
+                    float adaptiveFrameTime = Mathf.Lerp(baseFrameTime, frameTime, 0.2f);
+
+                    return group switch
+                    {
+                        PriorityTick.High => adaptiveFrameTime,
+                        PriorityTick.MediumHigh => adaptiveFrameTime * 2,
+                        PriorityTick.Medium => adaptiveFrameTime * 4,
+                        PriorityTick.MediumLow => adaptiveFrameTime * 8,
+                        PriorityTick.Low => adaptiveFrameTime * 16,
+                        PriorityTick.None => 1f,
+                        _ => adaptiveFrameTime
+                    };
+                }
+            }
+            
+            private IQueueAction _current = null;
+            private bool _isPaused = false;
+            private float _elapsedSinceLastTick = 0;
+            private int _targetFrameRate = -1;
+            private PriorityTick _priority = PriorityTick.High;
+            private ActionStatus _status = ActionStatus.Idle;
+            public bool IsRunning => _status == ActionStatus.Running;
+            public bool HasFinished => _status == ActionStatus.Success || _status == ActionStatus.Failure;
+            
+            #region Setters
+
+            public ActionQueueRunner AddAction(IQueueAction data)
+            {
+                _current = data;
+                
+                return this;
+            }
+            
+            public ActionQueueRunner SetTargetFrameRate(int targetFrameRate)
+            {
+                _targetFrameRate = targetFrameRate;
+                return this;
+            }
+
+            public ActionQueueRunner SetPriority(PriorityTick priority)
+            {
+                _priority = priority;
+                return this;
+            }
+
+            #endregion
+
+            #region Actions
+
+            public void Pause() => _isPaused = true;
+            public void Resume() => _isPaused = false;
+
+            public void Interrupt()
+            {
+                _current?.OnInterrupt();
+                _current = null;
+                _status = ActionStatus.Success;
+            }
+
+            #endregion
+            
+            public void Execute(float deltaTime, float frameTime)
+            {
+                if(_isPaused) return;
+                
+                if (_current != null)
+                {
+                    _status = ActionStatus.Running;
+                    
+                    _elapsedSinceLastTick += deltaTime;
+                    float interval = TimerTools.GetPriorityTick(_priority, frameTime, _targetFrameRate);
+
+                    while (_elapsedSinceLastTick >= interval)
+                    {
+                        
+                        if (_current.OnUpdate(interval) == ActionStatus.Success)
+                        {
+                            _elapsedSinceLastTick = 0;
+                            _status = ActionStatus.Idle;
+                            break;
+                        }
+                        
+                        _elapsedSinceLastTick -= interval;
+                    }
+                }
+                else
+                {
+                    _status = ActionStatus.Success;
+                }
+            }
+
+            public void ResetValues()
+            {
+                _current = null;
+                _isPaused = false;
+                _status = ActionStatus.Idle;
+                _elapsedSinceLastTick = 0;
             }
         }
 
@@ -156,7 +268,7 @@ namespace NicolasMassara.CustomActionManager
         
         private class ActionQueueData
         {
-            public ActionQueue ActionQueue;
+            public ActionQueueRunner ActionQueue;
             public GeneratedId ExternalId;
         }
 
@@ -172,7 +284,7 @@ namespace NicolasMassara.CustomActionManager
             {
                 data.ActionQueue.Execute(Time.deltaTime, Time.unscaledDeltaTime);
 
-                if (data.ActionQueue.IsRunning == false)
+                if (data.ActionQueue.HasFinished)
                 {
                     _toRemove.Add(data);
                 }
@@ -208,7 +320,7 @@ namespace NicolasMassara.CustomActionManager
                 foreach (var data in _toRemove)
                 {
                     _running.Remove(data);
-                    _idsDic.Remove(data.ExternalId.Id);
+                    _idsDic.Remove(data.ExternalId.Id); ;
                     _actionFactory.ReturnActionQueue(data.ActionQueue);
                     data.ExternalId.Release();
                 }
@@ -222,18 +334,12 @@ namespace NicolasMassara.CustomActionManager
         #region Public API
 
         #region ActionQueue Settings
-
-        public static bool AddUrgentNext(GeneratedId id, IEnumerable<IQueueAction> action) => Instance.AddUrgentNextInternal(id,action); 
-        public static bool AddUrgentNext(GeneratedId id, IQueueAction action) => Instance.AddUrgentNextInternal(id,action); 
-        public static bool AddUrgentAndInterrupt(GeneratedId id, IQueueAction action) => Instance.AddUrgentAndInterruptInternal(id,action);
         public static bool Pause(GeneratedId id) => Instance.PauseInternal(id);
         public static bool Resume(GeneratedId id) => Instance.ResumeInternal(id);
-        public static bool Interrupt(GeneratedId id) => Instance.InterruptInternal(id);
 
         #endregion
 
-        public static ActionQueue GetActionQueue(GeneratedId id) => Instance.GetActionQueueInternal(id);
-        public static GeneratedId Add(IEnumerable<IQueueAction> queueData, PriorityTick priority = PriorityTick.High) => Instance.AddInternal(queueData,priority);
+        public static ActionQueueRunner GetActionQueue(GeneratedId id) => Instance.GetActionQueueInternal(id);
         public static GeneratedId Add(IQueueAction queueData, PriorityTick priority = PriorityTick.High) => Instance.AddInternal(queueData,priority);
         public static bool Remove(GeneratedId id) => Instance.RemoveInternal(id);
         public static void Clear() => Instance.ClearInternal();
@@ -244,44 +350,6 @@ namespace NicolasMassara.CustomActionManager
 
         #region ActionQueue Settings
         
-        private bool AddUrgentNextInternal(GeneratedId id, IEnumerable<IQueueAction> action)
-        {
-            if(id == null) return false;
-            
-            if (_idsDic.TryGetValue(id.Id, out var value))
-            {
-                value.ActionQueue.AddUrgentNext(action);
-                return true;
-            }
-            
-            return false;
-        }
-        
-        private bool AddUrgentNextInternal(GeneratedId id, IQueueAction action)
-        {
-            if(id == null) return false;
-            
-            if (_idsDic.TryGetValue(id.Id, out var value))
-            {
-                value.ActionQueue.AddUrgentNext(action);
-                return true;
-            }
-            
-            return false;
-        }
-        
-        private bool AddUrgentAndInterruptInternal(GeneratedId id, IQueueAction action)
-        {
-            if(id == null) return false;
-            
-            if (_idsDic.TryGetValue(id.Id, out var value))
-            {
-                value.ActionQueue.AddUrgentAndInterrupt(action);
-                return true;
-            }
-            
-            return false;
-        }
 
         private bool PauseInternal(GeneratedId id)
         {
@@ -308,43 +376,18 @@ namespace NicolasMassara.CustomActionManager
             
             return false;
         }
-        
-        private bool InterruptInternal(GeneratedId id)
-        {
-            if(id == null) return false;
-            
-            if (_idsDic.TryGetValue(id.Id, out var value))
-            {
-                value.ActionQueue.InterruptAction();
-                return true;
-            }
-            
-            return false;
-        }
 
         #endregion
 
 
-        private ActionQueue GetActionQueueInternal(GeneratedId id)
+        private ActionQueueRunner GetActionQueueInternal(GeneratedId id)
         {
             if(id == null) return null;
             
             return _idsDic.TryGetValue(id.Id, out var value) ? value.ActionQueue : null;
         }
-
         
         private GeneratedId AddInternal(IQueueAction queueData, PriorityTick priority = PriorityTick.High)
-        {
-            var generatedId = _idStorage.Generate();
-            var action = _actionFactory.GetActionQueue();
-            
-            action.AddAction(queueData).SetTargetFrameRate(Application.targetFrameRate).SetPriority(priority);
-            
-            _toAdd.Add(new ActionQueueData {ActionQueue = action, ExternalId = generatedId});
-            return generatedId;
-        }
-
-        private GeneratedId AddInternal(IEnumerable<IQueueAction> queueData, PriorityTick priority = PriorityTick.High)
         {
             var generatedId = _idStorage.Generate();
             var action = _actionFactory.GetActionQueue();
@@ -361,12 +404,7 @@ namespace NicolasMassara.CustomActionManager
             
             if (_idsDic.TryGetValue(id.Id, out var value))
             {
-                _toRemove.Add(value);
-                return true;
-            }
-            else if (!_cancelIds.Contains(id.Id))
-            {
-                _cancelIds.Add(id.Id);
+                value.ActionQueue.Interrupt();
                 return true;
             }
 

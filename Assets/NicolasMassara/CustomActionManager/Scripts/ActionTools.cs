@@ -706,6 +706,35 @@ namespace NicolasMassara.CustomActionManager
             _onInterrupt?.Invoke();
         }
     }
+    
+    public class InterruptAwareAction : IQueueAction
+    {
+        private readonly IQueueAction _inner;
+        private readonly Action _onInterrupted;
+        public ActionStatus CurrentStatus { get; private set; }
+
+        public InterruptAwareAction(IQueueAction inner, Action onInterrupted)
+        {
+            _inner = inner;
+            _onInterrupted = onInterrupted;
+        }
+
+        public void OnStart()
+        {
+            _inner.OnStart();
+        }
+
+        public ActionStatus OnUpdate(float deltaTime)
+        {
+            return _inner.OnUpdate(deltaTime);
+        }
+
+        public void OnInterrupt()
+        {
+            _inner.OnInterrupt();
+            _onInterrupted?.Invoke();
+        }
+    }
 
     #endregion
     

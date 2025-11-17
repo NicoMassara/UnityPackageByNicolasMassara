@@ -49,7 +49,11 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
                     {
                         Debug.Log("Action Timed Out, Removed!");
                         Remove();
-                    }));
+                    }))
+                .WrapAll(a => new InterruptAwareAction(a, () =>
+                {
+                    Debug.Log("Sequence Interrupted!");
+                }));
             
             var action = builder.Build();
 
@@ -67,26 +71,7 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
             
             LinkedActionManager.Remove(_generatedId);
         }
-
-        public void AddInterrupter()
-        {
-            if(_hasStarted == false) return;
-
-            LinkedActionManager.AddUrgentAndInterrupt(_generatedId, new LogDebugAction("Interrupted By This Message"));
-        }
         
-        public void AddUrgentNext()
-        {
-            if(_hasStarted == false) return;
-
-            LinkedActionManager.AddUrgentNext(_generatedId, new []
-            {
-                new LogDebugAction("This is an Urgent Message 1"),
-                new LogDebugAction("This is an Urgent Message 2"),
-                new LogDebugAction("This is an Urgent Message 3"),
-            });
-        }
-
         public void AllowContinue()
         {
             if(_hasStarted == false) return;
@@ -96,7 +81,10 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
 
         public void InterruptSequence()
         {
-            _sequence.OnInterrupt();
+            if(_hasStarted == false) return;
+            
+            LinkedActionManager.Clear();
+            
         }
     }
     
@@ -144,18 +132,6 @@ namespace NicolasMassara.CustomActionManager.Scripts.Test
             {
                 // Llama al método normalmente
                 script.Remove();
-            }
-            
-            if (GUILayout.Button("Add Interrupter"))
-            {
-                // Llama al método normalmente
-                script.AddInterrupter();
-            }
-            
-            if (GUILayout.Button("Add Urgent Next"))
-            {
-                // Llama al método normalmente
-                script.AddUrgentNext();
             }
             
             if (GUILayout.Button("Allow Continue"))
