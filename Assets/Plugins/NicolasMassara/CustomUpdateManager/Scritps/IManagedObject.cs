@@ -1,10 +1,6 @@
 ﻿namespace NicolasMassara.CustomUpdateManager
 {
-    public interface IManagedObject
-    {
-        
-    }
-
+    public interface IManagedObject { }
     public static class ManagedObjectExtensions
     {
         public static void RegisterInManager(this IManagedObject element)
