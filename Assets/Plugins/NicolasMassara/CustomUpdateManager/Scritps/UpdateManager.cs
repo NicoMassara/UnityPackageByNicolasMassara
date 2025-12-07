@@ -549,6 +549,12 @@ namespace NicolasMassara.CustomUpdateManager
         
         private void Awake()
         {
+            // Handle if is placed in a GameObject
+            if (_instance == null)
+            {
+                _instance = this;
+            }
+
             Application.targetFrameRate = TargetFrameRate;
             
             _updatableComponent = new UpdatableComponent(TargetFrameRate);

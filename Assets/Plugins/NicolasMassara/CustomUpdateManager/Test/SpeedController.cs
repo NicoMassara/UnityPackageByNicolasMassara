@@ -37,7 +37,7 @@ namespace Plugins.NicolasMassara.CustomUpdateManager.Test
 
             if (_lastFrameRate != frameRate)
             {
-                UpdateManager.Instance.SetTargetFrameRate(frameRate);
+                UpdateManager.SetTargetFrameRate(frameRate);
                 _lastFrameRate = frameRate;
             }
 
