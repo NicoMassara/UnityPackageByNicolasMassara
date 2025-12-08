@@ -4,12 +4,13 @@ using NicolasMassara.CustomUpdateManager;
 using UnityEditor;
 using UnityEngine;
 
-#if UNITY_EDITOR
 namespace Plugins.NicolasMassara.CustomUpdateManager.Test
 {
     [AddComponentMenu("NicolasMassara/CustomUpdateManager/Test/Update Manager Debug")]
     public class UpdateManagerDebug : MonoBehaviour
     {
+#if UNITY_EDITOR
+
         public int UpdateCount { get; private set; }
         public int FixedCount { get; private set; }
         public int LateCount { get; private set; }
@@ -20,16 +21,13 @@ namespace Plugins.NicolasMassara.CustomUpdateManager.Test
             FixedCount = UpdateManager.FixedCount;
             LateCount = UpdateManager.LateCount;
         }
-    }
-    
-    [System.Serializable]
-    public class UpdatableGroup
-    {
-        public UpdateManager.UpdatePriorityGroup PriorityGroup;
-        public List<MonoBehaviour> Items;
+        
+#endif
     }
     
     
+#if UNITY_EDITOR
+
     [CustomEditor(typeof(UpdateManagerDebug))]
     public class MyComponentEditor : Editor
     {
@@ -45,5 +43,5 @@ namespace Plugins.NicolasMassara.CustomUpdateManager.Test
         }
     }
     
-}
 #endif
+}

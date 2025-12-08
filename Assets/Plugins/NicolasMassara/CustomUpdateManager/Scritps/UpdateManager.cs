@@ -6,7 +6,7 @@ using UnityEngine;
 #if UNITY_EDITOR
 
 using Plugins.NicolasMassara.CustomUpdateManager.Test;
-
+            
 #endif
 
 namespace NicolasMassara.CustomUpdateManager
