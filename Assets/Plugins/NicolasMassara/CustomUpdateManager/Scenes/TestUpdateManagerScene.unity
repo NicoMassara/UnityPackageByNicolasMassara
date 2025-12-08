@@ -145,13 +145,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 179805354}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2d9d0b7b1e44f32b7254d6f185cba14, type: 3}
+  m_Script: {fileID: 11500000, guid: 844e90dcd5a142349a215bc999d09732, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotationSpeed: 100
+  rotationSpeed: 30
   isUpdatePaused: 0
   frameRate: 60
-  updateGroup: 1
+  updateGroup: 0
   timeScale: 1
   isPaused: 0
 --- !u!4 &179805356
@@ -303,12 +303,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 948547118}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 2
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1004069420
 GameObject:
   m_ObjectHideFlags: 0
@@ -318,7 +319,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1004069422}
-  - component: {fileID: 1004069421}
+  - component: {fileID: 1004069423}
   m_Layer: 0
   m_Name: Pivot 7
   m_TagString: Untagged
@@ -326,21 +327,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1004069421
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1004069420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 6
 --- !u!4 &1004069422
 Transform:
   m_ObjectHideFlags: 0
@@ -357,6 +343,22 @@ Transform:
   - {fileID: 2145945356}
   m_Father: {fileID: 1177668789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1004069423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1004069420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speedController: {fileID: 179805355}
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1121619956
 GameObject:
   m_ObjectHideFlags: 0
@@ -399,12 +401,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1121619956}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 1
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1177668788
 GameObject:
   m_ObjectHideFlags: 0
@@ -539,7 +542,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1365121963}
-  - component: {fileID: 1365121962}
+  - component: {fileID: 1365121964}
   m_Layer: 0
   m_Name: Pivot 8
   m_TagString: Untagged
@@ -547,21 +550,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1365121962
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365121961}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 7
 --- !u!4 &1365121963
 Transform:
   m_ObjectHideFlags: 0
@@ -578,6 +566,22 @@ Transform:
   - {fileID: 1566465112}
   m_Father: {fileID: 1177668789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1365121964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1365121961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speedController: {fileID: 179805355}
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1366125773
 GameObject:
   m_ObjectHideFlags: 0
@@ -620,12 +624,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1366125773}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 3
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1543292261
 GameObject:
   m_ObjectHideFlags: 0
@@ -807,7 +812,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1581930510}
-  - component: {fileID: 1581930509}
+  - component: {fileID: 1581930511}
   m_Layer: 0
   m_Name: Pivot 6
   m_TagString: Untagged
@@ -815,21 +820,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1581930509
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1581930508}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 5
 --- !u!4 &1581930510
 Transform:
   m_ObjectHideFlags: 0
@@ -846,6 +836,22 @@ Transform:
   - {fileID: 1910049655}
   m_Father: {fileID: 1177668789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1581930511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581930508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speedController: {fileID: 179805355}
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1653449547
 GameObject:
   m_ObjectHideFlags: 0
@@ -855,7 +861,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1653449549}
-  - component: {fileID: 1653449548}
+  - component: {fileID: 1653449550}
   m_Layer: 0
   m_Name: Pivot 5
   m_TagString: Untagged
@@ -863,21 +869,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1653449548
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1653449547}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speedController: {fileID: 179805355}
-  updateGroup: 1
-  tickGroup: 4
 --- !u!4 &1653449549
 Transform:
   m_ObjectHideFlags: 0
@@ -894,6 +885,22 @@ Transform:
   - {fileID: 1359122490}
   m_Father: {fileID: 1177668789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1653449550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1653449547}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speedController: {fileID: 179805355}
+  updateGroup: 0
+  tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &1760883158
 GameObject:
   m_ObjectHideFlags: 0
@@ -1194,12 +1201,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 2055014901}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48f017844c6f4b589b5c54fa324561ca, type: 3}
+  m_Script: {fileID: 11500000, guid: 0606d824bc4c42c1a54f1190be64c7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speedController: {fileID: 179805355}
-  updateGroup: 1
+  updateGroup: 0
   tickGroup: 0
+  priorityGroup: 0
 --- !u!1 &2142289191
 GameObject:
   m_ObjectHideFlags: 0
