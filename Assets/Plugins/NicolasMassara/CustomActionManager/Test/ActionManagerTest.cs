@@ -6,6 +6,7 @@ using UnityEngine;
 namespace NicolasMassara.CustomActionManager.Test
 {
 #if UNITY_EDITOR
+    [AddComponentMenu("NicolasMassara/Action Manager/Test/Action Manager Tester")]
     public class ActionManagerTest : MonoBehaviour
     {
         private ActionManager.GeneratedId _generatedId;

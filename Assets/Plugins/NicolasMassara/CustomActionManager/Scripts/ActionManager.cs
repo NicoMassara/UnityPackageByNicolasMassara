@@ -2,6 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+#if UNITY_EDITOR
+
+using NicolasMassara.CustomActionManager.Test;
+
+#endif
+
 namespace NicolasMassara.CustomActionManager
 {
     public class ActionManager : MonoBehaviour
@@ -412,6 +418,9 @@ namespace NicolasMassara.CustomActionManager
         
         private readonly Dictionary<ushort, UpdateType> _updateById = new Dictionary<ushort, UpdateType>();
         
+        public static event Action OnActionRegistered;
+        public static event Action OnActionUnregistered;
+        
         private class ActionQueueData
         {
             public ActionQueueRunner ActionQueue { get; private set; }
@@ -433,12 +442,35 @@ namespace NicolasMassara.CustomActionManager
             _lateUpdateRunner = new Runner(_actionFactory.ReturnActionQueue, RemoveFromUpdateDic);
         }
 
+        private void Start()
+        {
+#if UNITY_EDITOR
+
+            gameObject.AddComponent<ActionManagerDebug>();
+
+#endif
+        }
+
         private void RemoveFromUpdateDic(ushort id)
         {
             if(_updateById.ContainsKey(id) == false) return;
             
             _updateById.Remove(id);
+            OnActionUnregistered?.Invoke();
         }
+
+
+        #region Debug Getters
+        
+#if UNITY_EDITOR
+
+        public static int RunningCount => _instance._updateRunner.RunningCount;
+        public static int FixedRunningCount => _instance._fixedUpdateRunner.RunningCount;
+        public static int LateRunningCount => _instance._lateUpdateRunner.RunningCount;
+
+#endif
+        
+        #endregion
 
         #region Action Logic
 
@@ -582,6 +614,7 @@ namespace NicolasMassara.CustomActionManager
             }
             
             _updateById.Add(generatedId.Id, updateType);
+            OnActionRegistered?.Invoke();
             
             return generatedId;
         }
