@@ -5,6 +5,7 @@ using UnityEditor;
 namespace NicolasMassara.CustomTimerManager.Tests
 {
 #if UNITY_EDITOR
+    [AddComponentMenu("NicolasMassara/Custom Timer Manager/Tests/Timer Manager Tester")]
     public class TimerManagerTester : MonoBehaviour
     {
         [SerializeField] private TimerManagerTestData testMessage;
@@ -20,6 +21,16 @@ namespace NicolasMassara.CustomTimerManager.Tests
         {
             _canExecute = true;
             Application.targetFrameRate = targetFrameRate;
+
+            TimerManager.OnAdded += () =>
+            {
+                Debug.LogFormat("Timer Added");
+            };
+            
+            TimerManager.OnRemoved += () =>
+            {
+                Debug.LogFormat("Timer Removed");
+            };
         }
 
         public void AddTimer()

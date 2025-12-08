@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+#if UNITY_EDITOR
+
+using NicolasMassara.CustomTimerManager.Tests;
+
+#endif
+
 namespace NicolasMassara.CustomTimerManager
 {
     #region External Tools
@@ -340,10 +346,15 @@ namespace NicolasMassara.CustomTimerManager
         //====================================================
         //                       COUNTERS
         //====================================================
-        public int RunningCount => _running.Count;
-        public int CancelCount => _cancelAddIds.Count;
-        public int ToAddCount => _toAdd.Count;
-        public int ToRemoveCount => _toRemove.Count;
+        public static int RunningCount => _instance._running.Count;
+        public static int CancelCount => _instance._cancelAddIds.Count;
+        public static int ToAddCount => _instance._toAdd.Count;
+        public static int ToRemoveCount => _instance._toRemove.Count;
+
+
+        public static event Action OnAdded;
+        public static event Action OnRemoved;
+        
 
         //====================================================
         //                     INITIALIZE
@@ -354,6 +365,15 @@ namespace NicolasMassara.CustomTimerManager
 
             _applicationTargetFrameRate = Application.targetFrameRate;
             InitializeTimer();
+        }
+
+        private void Start()
+        {
+#if UNITY_EDITOR
+
+            gameObject.AddComponent<TimerDebug>();
+
+#endif
         }
 
         private void InitializeTimer() => _timerFactory = new TimerFactory(InitialTimerCount);
@@ -456,6 +476,8 @@ namespace NicolasMassara.CustomTimerManager
                 Timer = timer,
                 ExternalId = generatedId
             });
+            
+            OnAdded?.Invoke();
 
             return generatedId;
         }
@@ -467,12 +489,14 @@ namespace NicolasMassara.CustomTimerManager
             if (_timerDic.TryGetValue(generatedId.Id, out var value))
             {
                 _toRemove.Add(value);
+                OnRemoved?.Invoke();
                 return true;
             }
 
             if (_cancelAddIds.Contains(generatedId.Id))
             {
                 _cancelAddIds.Add(generatedId.Id);
+                OnRemoved?.Invoke();
                 return true;
             }
 
