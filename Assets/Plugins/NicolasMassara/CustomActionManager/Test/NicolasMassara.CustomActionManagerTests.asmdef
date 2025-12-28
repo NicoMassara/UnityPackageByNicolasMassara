@@ -1,0 +1,4 @@
+﻿{
+  "name": "NicolasMassara.CustomActionManagerTests",
+  "references":[ "NicolasMassara.CustomActionManager" ]
+}

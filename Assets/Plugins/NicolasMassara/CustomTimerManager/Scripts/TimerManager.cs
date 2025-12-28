@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
 namespace NicolasMassara.CustomTimerManager
 {
     #region External Tools
@@ -273,12 +272,6 @@ namespace NicolasMassara.CustomTimerManager
                 _isPaused = false;
             }
 
-            public void Restart()
-            {
-                _elapsedSinceLastTick = 0;
-                _currentTime = _targetTime;
-            }
-
             /// <summary>
             /// Resets all internal timer values.
             /// </summary>
@@ -347,15 +340,10 @@ namespace NicolasMassara.CustomTimerManager
         //====================================================
         //                       COUNTERS
         //====================================================
-        public static int RunningCount => _instance._running.Count;
-        public static int CancelCount => _instance._cancelAddIds.Count;
-        public static int ToAddCount => _instance._toAdd.Count;
-        public static int ToRemoveCount => _instance._toRemove.Count;
-
-
-        public static event Action OnAdded;
-        public static event Action OnRemoved;
-        
+        public int RunningCount => _running.Count;
+        public int CancelCount => _cancelAddIds.Count;
+        public int ToAddCount => _toAdd.Count;
+        public int ToRemoveCount => _toRemove.Count;
 
         //====================================================
         //                     INITIALIZE
@@ -448,7 +436,6 @@ namespace NicolasMassara.CustomTimerManager
         public static bool Remove(GeneratedId generatedId) => Instance.RemoveInternal(generatedId);
         public static bool Pause(GeneratedId generatedId) => Instance.PauseInternal(generatedId);
         public static bool Resume(GeneratedId generatedId) => Instance.ResumeInternal(generatedId);
-        public static bool Restart(GeneratedId generatedId) => Instance.RestartInternal(generatedId);
         public static void Clear() => Instance.ClearInternal();
 
         #endregion
@@ -469,8 +456,6 @@ namespace NicolasMassara.CustomTimerManager
                 Timer = timer,
                 ExternalId = generatedId
             });
-            
-            OnAdded?.Invoke();
 
             return generatedId;
         }
@@ -482,14 +467,12 @@ namespace NicolasMassara.CustomTimerManager
             if (_timerDic.TryGetValue(generatedId.Id, out var value))
             {
                 _toRemove.Add(value);
-                OnRemoved?.Invoke();
                 return true;
             }
 
             if (_cancelAddIds.Contains(generatedId.Id))
             {
                 _cancelAddIds.Add(generatedId.Id);
-                OnRemoved?.Invoke();
                 return true;
             }
 
@@ -521,19 +504,6 @@ namespace NicolasMassara.CustomTimerManager
 
             return false;
         }
-
-        private bool RestartInternal(GeneratedId generatedId)
-        {
-            if(generatedId == null) return false;
-            if (_timerDic.TryGetValue(generatedId.Id, out var value))
-            {
-                value.Timer.Restart();
-                return true;
-            }
-
-            return false;
-        }
-
 
         private void ClearInternal()
         {

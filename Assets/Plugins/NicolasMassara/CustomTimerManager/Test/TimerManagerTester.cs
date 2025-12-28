@@ -5,7 +5,6 @@ using UnityEditor;
 namespace NicolasMassara.CustomTimerManager.Tests
 {
 #if UNITY_EDITOR
-    [AddComponentMenu("NicolasMassara/Custom Timer Manager/Tests/Timer Manager Tester")]
     public class TimerManagerTester : MonoBehaviour
     {
         [SerializeField] private TimerManagerTestData testMessage;
@@ -21,16 +20,6 @@ namespace NicolasMassara.CustomTimerManager.Tests
         {
             _canExecute = true;
             Application.targetFrameRate = targetFrameRate;
-
-            TimerManager.OnAdded += () =>
-            {
-                Debug.LogFormat("Timer Added");
-            };
-            
-            TimerManager.OnRemoved += () =>
-            {
-                Debug.LogFormat("Timer Removed");
-            };
         }
 
         public void AddTimer()
@@ -61,13 +50,6 @@ namespace NicolasMassara.CustomTimerManager.Tests
             if (_canExecute == false) return;
             
             TimerManager.Resume(_id);
-        }
-
-        public void RestartTimer()
-        {
-            if (_canExecute == false) return;
-            
-            TimerManager.Restart(_id);
         }
     }
 
@@ -106,14 +88,34 @@ namespace NicolasMassara.CustomTimerManager.Tests
     {
         public override void OnInspectorGUI()
         {
+            // Dibuja el inspector normal
             DrawDefaultInspector();
+
+            // Agrega el botón
             TimerManagerTester script = (TimerManagerTester)target;
+            if (GUILayout.Button("Add Timer"))
+            {
+                // Llama al método normalmente
+                script.AddTimer();
+            }
             
-            if (GUILayout.Button("Add Timer")) script.AddTimer();
-            if (GUILayout.Button("Remove Time")) script.RemoveTimer();
-            if (GUILayout.Button("Pause Timer")) script.PauseTimer();
-            if (GUILayout.Button("Resume Timer")) script.ResumeTimer();
-            if (GUILayout.Button("Restart Timer")) script.RestartTimer();
+            if (GUILayout.Button("Remove Time"))
+            {
+                // Llama al método normalmente
+                script.RemoveTimer();
+            }
+            
+            if (GUILayout.Button("Pause Timer"))
+            {
+                // Llama al método normalmente
+                script.PauseTimer();
+            }
+            
+            if (GUILayout.Button("Resume Time"))
+            {
+                // Llama al método normalmente
+                script.ResumeTimer();
+            }
         }
     }
     
