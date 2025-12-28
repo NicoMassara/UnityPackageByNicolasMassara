@@ -3,18 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
 namespace NicolasMassara.CustomUpdateManager
 {
-    
     public class UpdateManager : MonoBehaviour
     {
         // ----------------------- Custom Time ---------------------------
+
+        #region Custom Time
+        
         public static class CustomTime
         {
             private static readonly Dictionary<UpdateGroup, TimeChannel> Channels = new();
 
             public static float GlobalTimeScale = 1;
             public static float GlobalFixedTimeScale = 1;
+
+            public static event Action<UpdateGroup> OnPause;
+            public static event Action<UpdateGroup> OnResume;
             
             public static TimeChannel GetChannel(UpdateGroup key)
             {
@@ -60,30 +66,52 @@ namespace NicolasMassara.CustomUpdateManager
                     kv.Value.UpdateFixed(unscaledDeltaTime * GlobalFixedTimeScale);
             }
 
-            public static void SetChannelPaused(UpdateGroup updateGroup, bool isPaused)
+            #region Pause / Resume
+            
+            public static void PauseChannel(UpdateGroup updateGroup)
             {
                 if (updateGroup == UpdateGroup.Always)
                 {
-                    Debug.LogWarning("Update Group: Always cannot be paused");
+                    Debug.LogWarning("Update Group 'Always' cannot be paused");
                     return;
                 }
 
-                GetChannel(updateGroup).SetPaused(isPaused);
+                GetChannel(updateGroup).SetPaused(true);
+                OnPause?.Invoke(updateGroup);
             }
             
-            public static void SetChannelPaused(UpdateGroup[] updateGroup, bool isPaused)
+            public static void PauseChannel(UpdateGroup[] updateGroup)
             {
                 for (int i = 0; i < updateGroup.Length; i++)
                 {
-                    GetChannel(updateGroup[i]).SetPaused(isPaused);
+                    PauseChannel(updateGroup[i]);
                 }
             }
+            
+            public static void ResumeChannel(UpdateGroup updateGroup)
+            {
+                if (updateGroup == UpdateGroup.Always)
+                {
+                    return;
+                }
+
+                GetChannel(updateGroup).SetPaused(false);
+                OnResume?.Invoke(updateGroup);
+            }
+            
+            public static void ResumeChannel(UpdateGroup[] updateGroup)
+            {
+                for (int i = 0; i < updateGroup.Length; i++) 
+                    ResumeChannel(updateGroup[i]);
+            }
+            
+            #endregion
             
             public static void SetChannelTimeScale(UpdateGroup updateGroup, float timeScale)
             {
                 if (updateGroup == UpdateGroup.Always)
                 {
-                    Debug.LogWarning("Update Group: Always cannot be modified");
+                    Debug.LogWarning("Update Group 'Always' cannot be modified");
                     return;
                 }
                 
@@ -123,9 +151,11 @@ namespace NicolasMassara.CustomUpdateManager
             }
         }
         
-        // -------------------------------------------------------------
+        #endregion
         
-        // ----------------------- Interfaces ---------------------------
+        // ----------------------- Base Interfaces ---------------------------
+        
+        #region Base Interfaces 
         
         public interface IBaseUpdatable { }
 
@@ -153,19 +183,44 @@ namespace NicolasMassara.CustomUpdateManager
             public TickGroup LateSelfTickGroup { get; }
             void ExecuteLateUpdate(float deltaTime);
         }
-        // -------------------------------------------------------------
+        
+        #endregion
+        
+        
+        // ----------------------- Conditional  Interfaces ---------------------------
+        
+        #region Conditional Interfaces
+
+        public interface IUpdateConditional
+        {
+           public bool CanUpdate(UpdateType type);
+        }
+        
+        
+        
+        #endregion 
         
         // ----------------------- Enums ---------------------------
         
+        #region Enums
+        
+        public enum UpdateType
+        {
+            Update,
+            Fixed,
+            Late
+        }
+        
+        // Add many groups as you like, but do not remove 'Always'
         public enum UpdateGroup
         {
-            Always,
+            Always, // DO NOT REMOVE
             Gameplay,
             UI,
             Inputs,
-            Camera
         }
 
+        // Add many groups as you like
         public enum UpdatePriorityGroup
         {
             Critical   = 0,
@@ -174,7 +229,9 @@ namespace NicolasMassara.CustomUpdateManager
             Low        = 300,
             Background = 400,  
         }
-
+        
+        
+        // Modify it as you please, but you'll need to modify 'GetTickInterval'
         public enum TickGroup
         {
             EveryFrame,
@@ -183,34 +240,14 @@ namespace NicolasMassara.CustomUpdateManager
             EveryEightSecond,
             EverySixteenthSecond,
             EveryThirtySecond,
-            EverySixtyFourthTarget,
+            EverySixtyFourthSecond,
             EverySecond
         }
-        // -------------------------------------------------------------
         
-        // ----------------------- Singleton ---------------------------
-        public static UpdateManager Instance =>  _instance != null ? _instance : (_instance = CreateInstance());
-        protected static UpdateManager _instance;
+        #endregion
         
-        private static UpdateManager CreateInstance()
-        {
-            var gameObject = new GameObject(nameof(UpdateManager))
-            {
-                hideFlags = HideFlags.DontSave,
-            };
-            //Debug.Log($"Singleton Created: {typeof(T)}");
-            DontDestroyOnLoad(gameObject);
-            return gameObject.AddComponent<UpdateManager>();
-        }
+        // ----------------------- Tools ---------------------------
         
-        // -------------------------------------------------------------
-        
-        // --------------------- Updatable Components -----------------------
-        
-        #region Updatable Component Controller
-
-        #region Tools
-
         private static float GetTickInterval(TickGroup group, int targetFrameRate, float scaledDeltaTime)
         {
             float baseInterval = targetFrameRate > 0
@@ -225,15 +262,34 @@ namespace NicolasMassara.CustomUpdateManager
                 TickGroup.EveryEightSecond      => baseInterval * 8f,
                 TickGroup.EverySixteenthSecond  => baseInterval * 16f,
                 TickGroup.EveryThirtySecond => baseInterval * 32f,
-                TickGroup.EverySixtyFourthTarget => baseInterval * 64f,
+                TickGroup.EverySixtyFourthSecond => baseInterval * 64f,
                 TickGroup.EverySecond      => 1f,
                 _ => throw new ArgumentOutOfRangeException(nameof(group), group, null)
             };
 
             return tickValue;
         }
-
-        #endregion
+        
+        
+        // ----------------------- Singleton ---------------------------
+        
+        public static UpdateManager Instance =>  _instance != null ? _instance : (_instance = CreateInstance());
+        protected static UpdateManager _instance;
+        
+        private static UpdateManager CreateInstance()
+        {
+            var gameObject = new GameObject(nameof(UpdateManager))
+            {
+                hideFlags = HideFlags.DontSave,
+            };
+            //Debug.Log($"Singleton Created: {typeof(T)}");
+            DontDestroyOnLoad(gameObject);
+            return gameObject.AddComponent<UpdateManager>();
+        }
+        
+        // --------------------- Updatable Components -----------------------
+        
+        #region Updatable Component Controller
         
         private abstract class UpdateController<T> where T : IBaseUpdatable
         {
@@ -244,18 +300,26 @@ namespace NicolasMassara.CustomUpdateManager
             private readonly List<T> _runningList = new List<T>();
             private readonly Dictionary<UpdatePriorityGroup, List<T>> _runningDic = new Dictionary<UpdatePriorityGroup, List<T>>();
             private readonly Dictionary<T, float> _accumulatedDeltaTimeDic = new Dictionary<T, float>();
+            protected abstract UpdateType SelfUpdateType { get; }
             
-            // Marcar si la lista ordenada está desactualizada
-            private bool _isDirty = true;
+            private bool _isDirty = false;
 
             protected int TargetFrameRate { get; private set; }
 
             public bool IsPaused;
             public int RunningCount => _runningList.Count;
+            
+            private event Action<IManagedObject> OnRegistered;
+            private event Action<IManagedObject> OnUnregistered;
+            
+            
 
-            protected UpdateController(int targetFrameRate)
+            protected UpdateController(int targetFrameRate, 
+                Action<IManagedObject> onRegistered, Action<IManagedObject> onUnregistered)
             {
                 TargetFrameRate = targetFrameRate;
+                OnRegistered = onRegistered;
+                OnUnregistered = onUnregistered;
             }
             
             public void UpdateComponents()
@@ -263,15 +327,22 @@ namespace NicolasMassara.CustomUpdateManager
                 ApplyPending();
                 
                 _isUpdating = true;
+
+                if (_isDirty) UpdateSortedPriorities();
                 
-                if (_isDirty) 
-                    UpdateSortedPriorities();
 
                 if (!IsPaused || RunningCount > 0)
                 {
                     for (int i = 0; i < _runningList.Count; i++)
                     {
-                        UpdateElement(_runningList[i]);
+                        var element = _runningList[i];
+                        
+                        // Check for conditional
+
+                        if (element is IUpdateConditional cond && !cond.CanUpdate(SelfUpdateType))
+                            continue;
+                        
+                        UpdateElement(element);
                     }
                 }
                 
@@ -283,6 +354,7 @@ namespace NicolasMassara.CustomUpdateManager
             protected abstract void UpdateElement(T element);
 
 
+            // ReSharper disable once MemberHidesStaticFromOuterClass
             public void SetTargetFrameRate(int targetFrameRate)
             {
                 TargetFrameRate = targetFrameRate;
@@ -290,24 +362,6 @@ namespace NicolasMassara.CustomUpdateManager
 
             #region Add/Remove
             
-            protected bool GetDosContainInRunningDic(UpdatePriorityGroup group, out List<T> runningList)
-            {
-                return _runningDic.TryGetValue(group, out runningList);
-            }
-
-            protected void AddToRunningDic(UpdatePriorityGroup group, T value)
-            {
-                if (GetDosContainInRunningDic(group, out List<T> runningList))
-                {
-                    runningList = new List<T>();
-                    _runningDic.Add(group, runningList);
-                }
-                
-                runningList.Add(value);
-                
-                _accumulatedDeltaTimeDic.TryAdd(value, 0);
-            }
-
             protected abstract void TryAddToRunningList(T element);
 
             private void RemoveFromRunningList(T element)
@@ -315,6 +369,7 @@ namespace NicolasMassara.CustomUpdateManager
                 if (_runningList.Contains(element))
                 {
                     _runningList.Remove(element);
+                    OnUnregistered?.Invoke((IManagedObject)element);
                 }
 
                 if (_accumulatedDeltaTimeDic.ContainsKey(element))
@@ -335,7 +390,6 @@ namespace NicolasMassara.CustomUpdateManager
                 else if (!_runningList.Contains(updatable))
                 {
                     TryAddToRunningList(updatable);
-                    _isDirty = false;
                 }
             }
             
@@ -400,22 +454,59 @@ namespace NicolasMassara.CustomUpdateManager
 
             #endregion
 
+            #region Debug Getters
+
+#if UNITY_EDITOR
+            
+            public Dictionary<UpdatePriorityGroup, List<T>> GetPriorityRunningDic() => _runningDic;
+            public Dictionary<T, float> GetAccumulatedDeltaTimeDic() => _accumulatedDeltaTimeDic;
+            
+#endif
+
+            #endregion
+
+            #region List / Dic
+            protected void AddToRunningDic(UpdatePriorityGroup group, T value)
+            {
+                if (_runningDic.TryGetValue(group, out var runningList) == false)
+                {
+                    runningList = new List<T>();
+                    _runningDic.Add(group, runningList);
+                }
+
+                _isDirty = true;
+                
+                OnRegistered?.Invoke((IManagedObject)value);
+                
+                runningList.Add(value);
+                
+                _accumulatedDeltaTimeDic.TryAdd(value, 0);
+            }
+
             protected void UpdateSortedPriorities()
             {
                 _runningList.Clear();
+                
+                // Ordenamos las prioridades solo si hay cambios
                 foreach (var priority in _runningDic.Keys.OrderBy(p => (int)p))
                 {
-                    _runningList.AddRange(_runningDic[priority]);
+                    var bucket = _runningDic[priority];
+                    if (bucket.Count > 0)
+                        _runningList.AddRange(bucket);
                 }
-
+                
                 _isDirty = false;
             }
+            
+            #endregion
         }
 
         private class UpdatableComponent : UpdateController<IUpdatable>
         {
-            public UpdatableComponent(int targetFrameRate) : 
-                base(targetFrameRate) { }
+            protected override UpdateType SelfUpdateType => UpdateType.Update;
+
+            public UpdatableComponent(int targetFrameRate, Action<IManagedObject> onRegistered, Action<IManagedObject> onUnregistered) 
+                : base(targetFrameRate, onRegistered, onUnregistered) { }
 
             protected override void TryAddToRunningList(IUpdatable element)
             {
@@ -456,9 +547,11 @@ namespace NicolasMassara.CustomUpdateManager
         }
         private class FixedUpdatableComponent : UpdateController<IFixedUpdatable>
         {
-            public FixedUpdatableComponent(int targetFrameRate) :
-                base(targetFrameRate) { }
+            protected override UpdateType SelfUpdateType => UpdateType.Fixed;
             
+            public FixedUpdatableComponent(int targetFrameRate, Action<IManagedObject> onRegistered, Action<IManagedObject> onUnregistered)
+                : base(targetFrameRate, onRegistered, onUnregistered) { }
+
             protected override void TryAddToRunningList(IFixedUpdatable element)
             {
                 AddToRunningDic(element.FixedSelfPriorityGroup, element);
@@ -495,9 +588,11 @@ namespace NicolasMassara.CustomUpdateManager
         }
         private class LateUpdatableComponent : UpdateController<ILateUpdatable>
         {
-            public LateUpdatableComponent(int targetFrameRate) : 
-                base(targetFrameRate) { }
+            protected override UpdateType SelfUpdateType => UpdateType.Late;
             
+            public LateUpdatableComponent(int targetFrameRate, Action<IManagedObject> onRegistered, Action<IManagedObject> onUnregistered)
+                : base(targetFrameRate, onRegistered, onUnregistered) { }
+
             protected override void TryAddToRunningList(ILateUpdatable element)
             {
                 AddToRunningDic(element.LateSelfPriorityGroup, element);
@@ -547,16 +642,58 @@ namespace NicolasMassara.CustomUpdateManager
         public int TargetFrameRate { get;  private set; } = 120;
         public bool IsGlobalPaused { get; set; }
         
+        public static event Action<IManagedObject> OnRegistered;
+        public static event Action<IManagedObject> OnUnregistered;
+        //
+        public static event Action<IManagedObject> OnFixedRegistered;
+        public static event Action<IManagedObject> OnFixedUnregistered;
+        //
+        public static event Action<IManagedObject> OnLateRegistered;
+        public static event Action<IManagedObject> OnLateUnregistered;
+        
         private void Awake()
         {
+            // Handle if is placed in a GameObject
+            if (_instance == null)
+            {
+                _instance = this;
+            }
+
             Application.targetFrameRate = TargetFrameRate;
             
-            _updatableComponent = new UpdatableComponent(TargetFrameRate);
-            _fixedUpdatableComponent = new FixedUpdatableComponent(TargetFrameRate);
-            _lateUpdatableComponent = new LateUpdatableComponent(TargetFrameRate);
+            _updatableComponent = new UpdatableComponent(TargetFrameRate, OnRegistered, OnUnregistered);
+            _fixedUpdatableComponent = new FixedUpdatableComponent(TargetFrameRate, OnFixedRegistered, OnFixedUnregistered);
+            _lateUpdatableComponent = new LateUpdatableComponent(TargetFrameRate, OnLateRegistered, OnLateUnregistered);
+            
         }
+        
+            
+        #region Count Getters
+        
+#if UNITY_EDITOR
+        public static int UpdateCount => _instance._updatableComponent.RunningCount;
+        public static Dictionary<UpdatePriorityGroup, List<IUpdatable>> UpdatePriorityGroups =>
+            _instance._updatableComponent.GetPriorityRunningDic();
+        public static Dictionary<IUpdatable, float> AccumulatedDeltaTime =>
+            _instance._updatableComponent.GetAccumulatedDeltaTimeDic();
+        
+        public static int FixedCount => _instance._fixedUpdatableComponent.RunningCount;
+        public static Dictionary<UpdatePriorityGroup, List<IFixedUpdatable>> FixedPriorityGroups =>
+            _instance._fixedUpdatableComponent.GetPriorityRunningDic();
+        public static Dictionary<IFixedUpdatable, float> FixedAccumulatedDeltaTime =>
+            _instance._fixedUpdatableComponent.GetAccumulatedDeltaTimeDic();
+        
+        public static int LateCount => _instance._lateUpdatableComponent.RunningCount;
+        public static Dictionary<UpdatePriorityGroup, List<ILateUpdatable>> LatePriorityGroups =>
+            _instance._lateUpdatableComponent.GetPriorityRunningDic();
+        public static Dictionary<ILateUpdatable, float> LateAccumulatedDeltaTime =>
+            _instance._lateUpdatableComponent.GetAccumulatedDeltaTimeDic();
+        
+#endif
+        
+        #endregion
 
-        #region Frame Rate
+        #region Frame Rate Setter
 
         public static void SetTargetFrameRate(int targetFrameRate) =>
             _instance.Internal_SetTargetFrameRate(targetFrameRate);
@@ -570,8 +707,6 @@ namespace NicolasMassara.CustomUpdateManager
         }
         
         #endregion
-
-
 
         #region Update Actions
 
