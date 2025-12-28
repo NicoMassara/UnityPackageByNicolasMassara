@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-#if UNITY_EDITOR
-
-using NicolasMassara.CustomTimerManager.Tests;
-
-#endif
 
 namespace NicolasMassara.CustomTimerManager
 {
@@ -278,6 +273,12 @@ namespace NicolasMassara.CustomTimerManager
                 _isPaused = false;
             }
 
+            public void Restart()
+            {
+                _elapsedSinceLastTick = 0;
+                _currentTime = _targetTime;
+            }
+
             /// <summary>
             /// Resets all internal timer values.
             /// </summary>
@@ -367,15 +368,6 @@ namespace NicolasMassara.CustomTimerManager
             InitializeTimer();
         }
 
-        private void Start()
-        {
-#if UNITY_EDITOR
-
-            gameObject.AddComponent<TimerDebug>();
-
-#endif
-        }
-
         private void InitializeTimer() => _timerFactory = new TimerFactory(InitialTimerCount);
 
         //====================================================
@@ -456,6 +448,7 @@ namespace NicolasMassara.CustomTimerManager
         public static bool Remove(GeneratedId generatedId) => Instance.RemoveInternal(generatedId);
         public static bool Pause(GeneratedId generatedId) => Instance.PauseInternal(generatedId);
         public static bool Resume(GeneratedId generatedId) => Instance.ResumeInternal(generatedId);
+        public static bool Restart(GeneratedId generatedId) => Instance.RestartInternal(generatedId);
         public static void Clear() => Instance.ClearInternal();
 
         #endregion
@@ -528,6 +521,19 @@ namespace NicolasMassara.CustomTimerManager
 
             return false;
         }
+
+        private bool RestartInternal(GeneratedId generatedId)
+        {
+            if(generatedId == null) return false;
+            if (_timerDic.TryGetValue(generatedId.Id, out var value))
+            {
+                value.Timer.Restart();
+                return true;
+            }
+
+            return false;
+        }
+
 
         private void ClearInternal()
         {
