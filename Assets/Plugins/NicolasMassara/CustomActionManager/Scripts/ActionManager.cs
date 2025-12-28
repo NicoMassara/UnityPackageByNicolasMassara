@@ -2,12 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-#if UNITY_EDITOR
-
-using NicolasMassara.CustomActionManager.Test;
-
-#endif
-
 namespace NicolasMassara.CustomActionManager
 {
     public class ActionManager : MonoBehaviour
@@ -440,15 +434,6 @@ namespace NicolasMassara.CustomActionManager
             _updateRunner = new Runner(_actionFactory.ReturnActionQueue, RemoveFromUpdateDic);
             _fixedUpdateRunner = new Runner(_actionFactory.ReturnActionQueue, RemoveFromUpdateDic);
             _lateUpdateRunner = new Runner(_actionFactory.ReturnActionQueue, RemoveFromUpdateDic);
-        }
-
-        private void Start()
-        {
-#if UNITY_EDITOR
-
-            gameObject.AddComponent<ActionManagerDebug>();
-
-#endif
         }
 
         private void RemoveFromUpdateDic(ushort id)
