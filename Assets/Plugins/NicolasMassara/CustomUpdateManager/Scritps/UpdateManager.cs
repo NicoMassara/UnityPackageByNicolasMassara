@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-#if UNITY_EDITOR
-
-using Plugins.NicolasMassara.CustomUpdateManager.Test;
-            
-#endif
 
 namespace NicolasMassara.CustomUpdateManager
 {
@@ -670,15 +665,6 @@ namespace NicolasMassara.CustomUpdateManager
             _fixedUpdatableComponent = new FixedUpdatableComponent(TargetFrameRate, OnFixedRegistered, OnFixedUnregistered);
             _lateUpdatableComponent = new LateUpdatableComponent(TargetFrameRate, OnLateRegistered, OnLateUnregistered);
             
-        }
-
-        private void Start()
-        {
-#if UNITY_EDITOR
-
-            gameObject.AddComponent<UpdateManagerDebug>();
-            
-#endif
         }
         
             
